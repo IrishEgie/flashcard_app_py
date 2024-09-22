@@ -5,18 +5,18 @@ import random as rd
 
 BACKGROUND_COLOR = "#B1DDC6"
 current_card = {}
-
+to_learn = {}
 # ---------------------------- CSV FETCH ------------------------------- #
-def fetch_fr_word():
-    # Load the CSV data into a DataFrame
-    df = pd.read_csv('./data/french_words.csv')
-    
+try:
+# Load the CSV data into a DataFrame
+    df = pd.read_csv('./data/words_to_learn.csv')
+except FileNotFoundError:
+    og_df = pd.read_csv('./data/french_words.csv')
+    to_learn = og_df.to_dict(orient='records')
+else:
     # Fetch both "French" and "English" columns
-    french_words = df.to_dict(orient='records')
-    
-    # Select a random record (dictionary with both French and English)
-    random_word = rd.choice(french_words)
-    return random_word
+    to_learn = df.to_dict(orient='records')
+
 
 def update_word():
     global current_card, flip_timer
@@ -24,11 +24,11 @@ def update_word():
     window.after_cancel(flip_timer)
     
     # Get a random French word and update current card
-    current_card = fetch_fr_word()
+    current_card = rd.choice(to_learn)
     
     # Update the canvas text with the French word
-    canvas_card.itemconfig(card_txt_lang, text="French")
-    canvas_card.itemconfig(card_txt_word, text=current_card["French"])
+    canvas_card.itemconfig(card_txt_lang, text="French", fill = "black")
+    canvas_card.itemconfig(card_txt_word, text=current_card["French"], fill = "black")
     canvas_card.itemconfig(card_img, image=card_front)
     
     # Schedule to flip the card to show the English translation after 3 seconds
@@ -36,11 +36,19 @@ def update_word():
 
 def flip_card():
     # Change the canvas to display the English translation and the back image
-    canvas_card.itemconfig(card_txt_lang, text="English")
-    canvas_card.itemconfig(card_txt_word, text=current_card["English"])
+    canvas_card.itemconfig(card_txt_lang, text="English", fill="white")
+    canvas_card.itemconfig(card_txt_word, text=current_card["English"], fill = "white")
     canvas_card.itemconfig(card_img, image=card_back)
 
+def is_known():
 
+    to_learn.remove(current_card)
+    
+    data = pd.DataFrame(to_learn)
+
+    data.to_csv("./data./words_to_learn.csv", index=False)
+
+    update_word()
 # ---------------------------- UI SETUP ------------------------------- #
 
 window = Tk()
@@ -65,7 +73,7 @@ card_txt_word = canvas_card.create_text(400, 263, text="", fill="black", font=("
 
 # Buttons
 right_img_btn = PhotoImage(file="./images/right.png")
-right_btn = Button(image=right_img_btn, highlightthickness=0, background=BACKGROUND_COLOR, command=update_word)
+right_btn = Button(image=right_img_btn, highlightthickness=0, background=BACKGROUND_COLOR, command=is_known)
 
 wrong_img_btn = PhotoImage(file="./images/wrong.png")
 wrong_btn = Button(image=wrong_img_btn, highlightthickness=0, background=BACKGROUND_COLOR, command=update_word)
